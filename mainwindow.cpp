@@ -645,6 +645,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
     // 所有标签都已安全关闭，保存配置并退出
     m_historyPanel->saveHistory();
+    m_settings->flushOverrides();
     saveSettings();
     if (m_openJudgeWindow)
         m_openJudgeWindow->close();
@@ -778,14 +779,23 @@ void MainWindow::onOutputPanelSettingChanged(const QString &key, const QVariant 
         font.setPointSize(value.toInt());
         m_outputPanel->setOutputFont(font);
     } else if (key == "output_panel.max_blocks") {
-        // max_blocks is used during append, no live adjustment needed
+        m_outputPanel->setMaxBlocks(value.toInt());
     }
 }
 
 void MainWindow::onPreviewSettingChanged(const QString &key, const QVariant &value)
 {
     m_settings->setSettingOverride(key, value);
-    // Preview settings apply on next split preview activation
+
+    if (key == "preview.split_debounce_ms") {
+        EditorWidget *editor = m_tabManager->currentEditor();
+        if (editor)
+            editor->setSplitPreviewDebounceMs(value.toInt());
+    } else if (key == "preview.split_preview_ratio") {
+        EditorWidget *editor = m_tabManager->currentEditor();
+        if (editor)
+            editor->applySplitPreviewRatio();
+    }
 }
 
 void MainWindow::onSearchSettingChanged(const QString &key, const QVariant &value)
